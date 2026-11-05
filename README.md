@@ -1,1 +1,782 @@
-# care-system
+[index.html.html](https://github.com/user-attachments/files/34404735/index.html.html)
+# care-system<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>社區據點血壓紀錄與簽到收費系統</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter & Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            800: '#115e59',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans TC', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar for better visual quality */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-12">
+
+    <!-- Header Section -->
+    <header class="bg-brand-700 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white text-brand-700 p-2 rounded-lg shadow-sm">
+                    <i class="fa-solid font-bold fa-heart-pulse text-xl sm:text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold leading-tight">長照據點簽到與血壓管理</h1>
+                    <p class="text-xs text-brand-100">當日簽到 • 血壓量測 • 自費試算</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 text-xs sm:text-sm bg-brand-800 px-3 py-1.5 rounded-full">
+                <i class="fa-regular fa-calendar-check text-brand-100"></i>
+                <span id="currentDateDisplay" class="font-medium"></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+
+        <!-- Top Overview Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <!-- Card 1: Today Sign-ins -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex items-center justify-between">
+                <div>
+                    <p class="text-xs sm:text-sm font-medium text-slate-500">今日簽到總人數</p>
+                    <h3 class="text-2xl sm:text-3xl font-bold text-slate-800 mt-1" id="statTodayCount">0 <span class="text-sm font-normal text-slate-500">人</span></h3>
+                </div>
+                <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+            </div>
+
+            <!-- Card 2: Self-Pay Count -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex items-center justify-between">
+                <div>
+                    <p class="text-xs sm:text-sm font-medium text-slate-500">自費個案簽到數</p>
+                    <h3 class="text-2xl sm:text-3xl font-bold text-amber-600 mt-1" id="statSelfPayCount">0 <span class="text-sm font-normal text-slate-500">人</span></h3>
+                </div>
+                <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-user-gear"></i>
+                </div>
+            </div>
+
+            <!-- Card 3: Total Revenue Today -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex items-center justify-between">
+                <div>
+                    <p class="text-xs sm:text-sm font-medium text-slate-500">今日自費應收總額</p>
+                    <h3 class="text-2xl sm:text-3xl font-bold text-emerald-600 mt-1" id="statTodayAmount">$0</h3>
+                </div>
+                <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-sack-dollar"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- LEFT FORM: Record Form (5 Cols on LG) -->
+            <section class="lg:col-span-5 bg-white rounded-xl shadow-sm border border-slate-200 p-5 sm:p-6">
+                <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center">
+                        <i class="fa-solid fa-pen-to-square text-brand-600 mr-2"></i> 新增簽到紀錄
+                    </h2>
+                    <button type="button" id="btnOpenNewElderModal" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition flex items-center">
+                        <i class="fa-solid fa-user-plus mr-1"></i> 新增長輩名單
+                    </button>
+                </div>
+
+                <form id="checkInForm" class="space-y-4">
+                    <!-- Elder Selection -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1" for="elderSelect">
+                            長輩姓名 <span class="text-red-500">*</span>
+                        </label>
+                        <select id="elderSelect" required class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-base rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 block transition">
+                            <option value="" disabled selected>-- 請選擇長輩 --</option>
+                        </select>
+                    </div>
+
+                    <!-- Case Type & Fee Calculation Box -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-semibold text-slate-700">個案身分種類</span>
+                            <div class="inline-flex rounded-md shadow-sm" role="group">
+                                <button type="button" id="btnTypeGov" class="px-3 py-1.5 text-xs font-semibold rounded-l-lg border border-slate-300 bg-brand-600 text-white transition">
+                                    公費 / 一般
+                                </button>
+                                <button type="button" id="btnTypeSelf" class="px-3 py-1.5 text-xs font-semibold rounded-r-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 transition">
+                                    自費個案
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Duration Selector (Visible for Calculation) -->
+                        <div class="pt-2 border-t border-slate-200">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1.5">參與時間與收費方式</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="cursor-pointer border border-slate-300 rounded-lg p-2.5 flex items-center justify-between bg-white hover:border-brand-500 transition has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
+                                    <div class="flex items-center">
+                                        <input type="radio" name="duration" value="half" class="w-4 h-4 text-brand-600 focus:ring-brand-500" checked>
+                                        <span class="ml-2 text-sm font-medium text-slate-800">半天 (時段)</span>
+                                    </div>
+                                    <span class="text-xs font-bold text-slate-500 duration-fee-tag" data-fee="90">$90</span>
+                                </label>
+                                <label class="cursor-pointer border border-slate-300 rounded-lg p-2.5 flex items-center justify-between bg-white hover:border-brand-500 transition has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
+                                    <div class="flex items-center">
+                                        <input type="radio" name="duration" value="full" class="w-4 h-4 text-brand-600 focus:ring-brand-500">
+                                        <span class="ml-2 text-sm font-medium text-slate-800">整天 (全日)</span>
+                                    </div>
+                                    <span class="text-xs font-bold text-slate-500 duration-fee-tag" data-fee="200">$200</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Display Calculated Fee Result -->
+                        <div class="flex items-center justify-between pt-1">
+                            <span class="text-xs font-medium text-slate-500">本日應收自費額：</span>
+                            <span class="text-xl font-extrabold text-emerald-600" id="calculatedFeeDisplay">$0</span>
+                        </div>
+                    </div>
+
+                    <!-- Blood Pressure Input Section -->
+                    <div class="pt-2">
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                            <i class="fa-solid fa-heart-pulse text-red-500 mr-1"></i> 生理數值紀錄
+                        </label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-xs text-slate-500 mb-1" for="systolicInput">收縮壓 (mmHg)</label>
+                                <input type="number" id="systolicInput" placeholder="120" min="50" max="250" required
+                                    class="w-full border border-slate-300 rounded-lg p-2 text-center text-lg font-semibold focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-500 mb-1" for="diastolicInput">舒張壓 (mmHg)</label>
+                                <input type="number" id="diastolicInput" placeholder="80" min="30" max="150" required
+                                    class="w-full border border-slate-300 rounded-lg p-2 text-center text-lg font-semibold focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-500 mb-1" for="pulseInput">心跳 (bpm)</label>
+                                <input type="number" id="pulseInput" placeholder="75" min="40" max="200" required
+                                    class="w-full border border-slate-300 rounded-lg p-2 text-center text-lg font-semibold focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                            </div>
+                        </div>
+
+                        <!-- Dynamic BP Indicator Alert Badge -->
+                        <div id="bpStatusBadge" class="mt-3 p-2.5 rounded-lg text-xs font-medium flex items-center justify-between bg-slate-100 text-slate-600">
+                            <div class="flex items-center">
+                                <i class="fa-solid fa-circle-info mr-1.5"></i>
+                                <span id="bpStatusText">請輸入完整血壓數值進行即時判讀</span>
+                            </div>
+                            <span id="bpCategoryTag" class="px-2 py-0.5 rounded text-xs font-bold hidden"></span>
+                        </div>
+                    </div>
+
+                    <!-- Note / Remark -->
+                    <div>
+                        <label class="block text-xs text-slate-500 mb-1" for="remarkInput">備註事項 (選填)</label>
+                        <input type="text" id="remarkInput" placeholder="例如：身體微恙、未食早餐、代收金等"
+                            class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-base py-3 px-4 rounded-xl shadow transition duration-200 flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-check-to-slot"></i>
+                        <span>完成簽到與儲存紀錄</span>
+                    </button>
+                </form>
+            </section>
+
+            <!-- RIGHT TABLE: Log History & Search (7 Cols on LG) -->
+            <section class="lg:col-span-7 bg-white rounded-xl shadow-sm border border-slate-200 p-5 sm:p-6 flex flex-col justify-between">
+                <div>
+                    <!-- Section Header & Filter Toolbar -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-4 border-b border-slate-100 gap-3">
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center">
+                            <i class="fa-solid fa-list-check text-brand-600 mr-2"></i> 今日與歷史簽到明細
+                        </h2>
+                        
+                        <div class="flex items-center space-x-2">
+                            <button id="btnExportCSV" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs px-3 py-1.5 rounded-lg font-semibold transition flex items-center">
+                                <i class="fa-solid fa-file-excel mr-1"></i> 匯出 CSV 報表
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filter Controls Row -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
+                        <div>
+                            <input type="date" id="filterDate" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-lg p-2 focus:ring-brand-500 focus:border-brand-500">
+                        </div>
+                        <div>
+                            <input type="text" id="filterSearch" placeholder="搜尋長輩姓名..." class="w-full bg-slate-50 border border-slate-300 text-xs rounded-lg p-2 focus:ring-brand-500 focus:border-brand-500">
+                        </div>
+                        <div>
+                            <select id="filterType" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-lg p-2 focus:ring-brand-500 focus:border-brand-500">
+                                <option value="all">全部身分 (公費與自費)</option>
+                                <option value="self">僅看「自費個案」</option>
+                                <option value="gov">僅看「公費/一般」</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Logs Table Container -->
+                    <div class="overflow-x-auto min-h-[320px] max-h-[500px] overflow-y-auto border border-slate-200 rounded-lg">
+                        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                            <thead class="bg-slate-100 text-slate-600 uppercase text-[11px] sticky top-0 z-10">
+                                <tr>
+                                    <th class="py-2.5 px-3 border-b">時間</th>
+                                    <th class="py-2.5 px-3 border-b">長輩姓名</th>
+                                    <th class="py-2.5 px-3 border-b">類別/時段</th>
+                                    <th class="py-2.5 px-3 border-b">血壓 / 心跳</th>
+                                    <th class="py-2.5 px-3 border-b">應收自費金額</th>
+                                    <th class="py-2.5 px-3 border-b text-right">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logTableBody" class="divide-y divide-slate-100">
+                                <!-- Dynamic rows inserted here -->
+                            </tbody>
+                        </table>
+                        <div id="emptyState" class="hidden text-center py-12 text-slate-400">
+                            <i class="fa-regular fa-folder-open text-4xl mb-2"></i>
+                            <p class="text-sm">尚無符合條件的簽到紀錄</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Summary Info inside Section -->
+                <div class="pt-3 mt-3 border-t border-slate-100 text-xs text-slate-500 flex justify-between items-center">
+                    <span>* 點擊操作欄位的垃圾桶按鈕可刪除單筆紀錄。</span>
+                    <span id="recordCountDisplay">顯示 0 筆紀錄</span>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Modal: Add New Elder -->
+    <div id="modalNewElder" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden px-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 transform transition-all">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                <h3 class="text-lg font-bold text-slate-800">新增長輩資料</h3>
+                <button type="button" id="btnCloseModal" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="newElderForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1" for="newElderName">長輩姓名 <span class="text-red-500">*</span></label>
+                    <input type="text" id="newElderName" required placeholder="請輸入姓名 (例：王大明)" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-brand-500 focus:border-brand-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">預設個案身分</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="border border-slate-300 rounded-lg p-2 flex items-center justify-center cursor-pointer hover:bg-slate-50">
+                            <input type="radio" name="newElderType" value="gov" checked class="text-brand-600">
+                            <span class="ml-2 text-xs font-medium">公費 / 一般個案</span>
+                        </label>
+                        <label class="border border-slate-300 rounded-lg p-2 flex items-center justify-center cursor-pointer hover:bg-slate-50">
+                            <input type="radio" name="newElderType" value="self" class="text-brand-600">
+                            <span class="ml-2 text-xs font-medium text-amber-700">自費個案</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1" for="newElderPhone">緊急聯絡電話 (選填)</label>
+                    <input type="tel" id="newElderPhone" placeholder="0912-345-678" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-brand-500 focus:border-brand-500">
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-3">
+                    <button type="button" id="btnCancelModal" class="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100">取消</button>
+                    <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-semibold shadow">儲存長輩資料</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast Box (No alerts) -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-800 text-white text-sm px-4 py-3 rounded-xl shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center space-x-2">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMessage">操作成功</span>
+    </div>
+
+    <!-- Application Script Logic -->
+    <script>
+        // State Management & Pre-populated Sample Data
+        const DEFAULT_ELDERS = [
+            { id: '1', name: '張阿嬤 (張秀英)', defaultType: 'self', phone: '0912-111-222' },
+            { id: '2', name: '陳爺爺 (陳建國)', defaultType: 'gov', phone: '0922-333-444' },
+            { id: '3', name: '林伯伯 (林順利)', defaultType: 'self', phone: '0933-555-666' },
+            { id: '4', name: '李阿姨 (李淑芬)', defaultType: 'gov', phone: '0955-777-888' },
+        ];
+
+        const DEFAULT_LOGS = [
+            {
+                id: 'log-1',
+                date: new Date().toISOString().split('T')[0],
+                time: '08:45',
+                elderId: '1',
+                elderName: '張阿嬤 (張秀英)',
+                isSelfPay: true,
+                duration: 'full', // 'half' | 'full'
+                fee: 200,
+                systolic: 128,
+                diastolic: 82,
+                pulse: 72,
+                remark: '無特別不適'
+            },
+            {
+                id: 'log-2',
+                date: new Date().toISOString().split('T')[0],
+                time: '09:10',
+                elderId: '2',
+                elderName: '陳爺爺 (陳建國)',
+                isSelfPay: false,
+                duration: 'half',
+                fee: 0,
+                systolic: 145,
+                diastolic: 92,
+                pulse: 80,
+                remark: '血壓偏高，需稍後複測'
+            }
+        ];
+
+        // Global Variables
+        let elders = JSON.parse(localStorage.getItem('care_elders')) || DEFAULT_ELDERS;
+        let logs = JSON.parse(localStorage.getItem('care_logs')) || DEFAULT_LOGS;
+        let selectedCaseType = 'gov'; // 'gov' or 'self'
+
+        // DOM Elements
+        const elderSelect = document.getElementById('elderSelect');
+        const btnTypeGov = document.getElementById('btnTypeGov');
+        const btnTypeSelf = document.getElementById('btnTypeSelf');
+        const durationInputs = document.querySelectorAll('input[name="duration"]');
+        const calculatedFeeDisplay = document.getElementById('calculatedFeeDisplay');
+        const systolicInput = document.getElementById('systolicInput');
+        const diastolicInput = document.getElementById('diastolicInput');
+        const pulseInput = document.getElementById('pulseInput');
+        const bpStatusBadge = document.getElementById('bpStatusBadge');
+        const bpStatusText = document.getElementById('bpStatusText');
+        const bpCategoryTag = document.getElementById('bpCategoryTag');
+        const checkInForm = document.getElementById('checkInForm');
+        const logTableBody = document.getElementById('logTableBody');
+        const emptyState = document.getElementById('emptyState');
+        const filterDate = document.getElementById('filterDate');
+        const filterSearch = document.getElementById('filterSearch');
+        const filterType = document.getElementById('filterType');
+        const recordCountDisplay = document.getElementById('recordCountDisplay');
+
+        // Modal Elements
+        const modalNewElder = document.getElementById('modalNewElder');
+        const btnOpenNewElderModal = document.getElementById('btnOpenNewElderModal');
+        const btnCloseModal = document.getElementById('btnCloseModal');
+        const btnCancelModal = document.getElementById('btnCancelModal');
+        const newElderForm = document.getElementById('newElderForm');
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set current date on header
+            const today = new Date();
+            const dateStr = today.toISOString().split('T')[0];
+            document.getElementById('currentDateDisplay').textContent = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
+            filterDate.value = dateStr;
+
+            // Save defaults if empty
+            if (!localStorage.getItem('care_elders')) localStorage.setItem('care_elders', JSON.stringify(elders));
+            if (!localStorage.getItem('care_logs')) localStorage.setItem('care_logs', JSON.stringify(logs));
+
+            populateElderDropdown();
+            updateFeeCalculation();
+            renderLogsTable();
+            updateOverviewStats();
+
+            // Setup Listeners
+            setupEventListeners();
+        });
+
+        // Event Listeners setup
+        function setupEventListeners() {
+            // Toggle Case Type Buttons
+            btnTypeGov.addEventListener('click', () => setCaseType('gov'));
+            btnTypeSelf.addEventListener('click', () => setCaseType('self'));
+
+            // Duration radio change
+            durationInputs.forEach(input => input.addEventListener('change', updateFeeCalculation));
+
+            // Elder dropdown selection change (auto set default type)
+            elderSelect.addEventListener('change', (e) => {
+                const selectedId = e.target.value;
+                const found = elders.find(item => item.id === selectedId);
+                if (found) {
+                    setCaseType(found.defaultType || 'gov');
+                }
+            });
+
+            // BP Real-time Warning Monitor
+            [systolicInput, diastolicInput].forEach(elem => {
+                elem.addEventListener('input', evaluateBloodPressure);
+            });
+
+            // Form Submission
+            checkInForm.addEventListener('submit', handleFormSubmit);
+
+            // Filters
+            filterDate.addEventListener('change', renderLogsTable);
+            filterSearch.addEventListener('input', renderLogsTable);
+            filterType.addEventListener('change', renderLogsTable);
+
+            // Export CSV
+            document.getElementById('btnExportCSV').addEventListener('click', exportToCSV);
+
+            // Modal Toggles
+            btnOpenNewElderModal.addEventListener('click', () => modalNewElder.classList.remove('hidden'));
+            btnCloseModal.addEventListener('click', () => modalNewElder.classList.add('hidden'));
+            btnCancelModal.addEventListener('click', () => modalNewElder.classList.add('hidden'));
+            newElderForm.addEventListener('submit', handleNewElderSubmit);
+        }
+
+        // Populate Elder Select Options
+        function populateElderDropdown() {
+            elderSelect.innerHTML = '<option value="" disabled selected>-- 請選擇長輩 --</option>';
+            elders.forEach(elder => {
+                const opt = document.createElement('option');
+                opt.value = elder.id;
+                const tag = elder.defaultType === 'self' ? '[自費]' : '[公費]';
+                opt.textContent = `${tag} ${elder.name}`;
+                elderSelect.appendChild(opt);
+            });
+        }
+
+        // Set Case Type UI & Recalculate
+        function setCaseType(type) {
+            selectedCaseType = type;
+            if (type === 'gov') {
+                btnTypeGov.className = 'px-3 py-1.5 text-xs font-semibold rounded-l-lg border border-slate-300 bg-brand-600 text-white transition';
+                btnTypeSelf.className = 'px-3 py-1.5 text-xs font-semibold rounded-r-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 transition';
+            } else {
+                btnTypeGov.className = 'px-3 py-1.5 text-xs font-semibold rounded-l-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 transition';
+                btnTypeSelf.className = 'px-3 py-1.5 text-xs font-semibold rounded-r-lg border border-slate-300 bg-amber-600 text-white transition';
+            }
+            updateFeeCalculation();
+        }
+
+        // Fee Calculation Logic
+        function updateFeeCalculation() {
+            if (selectedCaseType === 'gov') {
+                calculatedFeeDisplay.textContent = '$0';
+                calculatedFeeDisplay.className = 'text-xl font-extrabold text-slate-400';
+            } else {
+                const selectedDuration = document.querySelector('input[name="duration"]:checked')?.value || 'half';
+                const fee = selectedDuration === 'half' ? 90 : 200;
+                calculatedFeeDisplay.textContent = `$${fee}`;
+                calculatedFeeDisplay.className = 'text-xl font-extrabold text-emerald-600';
+            }
+        }
+
+        // Blood Pressure Assessment Indicator
+        function evaluateBloodPressure() {
+            const sys = parseInt(systolicInput.value);
+            const dia = parseInt(diastolicInput.value);
+
+            if (!sys || !dia) {
+                bpStatusBadge.className = 'mt-3 p-2.5 rounded-lg text-xs font-medium flex items-center justify-between bg-slate-100 text-slate-600';
+                bpStatusText.textContent = '請輸入收縮壓與舒張壓進行即時判讀';
+                bpCategoryTag.classList.add('hidden');
+                return;
+            }
+
+            bpCategoryTag.classList.remove('hidden');
+
+            if (sys >= 140 || dia >= 90) {
+                // High BP Alert
+                bpStatusBadge.className = 'mt-3 p-2.5 rounded-lg text-xs font-medium flex items-center justify-between bg-red-50 text-red-700 border border-red-200';
+                bpStatusText.textContent = '⚠️ 血壓偏高 (高血壓警示)，建議休息後覆測';
+                bpCategoryTag.className = 'px-2 py-0.5 rounded text-xs font-bold bg-red-600 text-white';
+                bpCategoryTag.textContent = '偏高 / 警示';
+            } else if (sys >= 120 || dia >= 80) {
+                // Prehypertension
+                bpStatusBadge.className = 'mt-3 p-2.5 rounded-lg text-xs font-medium flex items-center justify-between bg-amber-50 text-amber-800 border border-amber-200';
+                bpStatusText.textContent = '⚡ 血壓為高血壓前期，請持續關注';
+                bpCategoryTag.className = 'px-2 py-0.5 rounded text-xs font-bold bg-amber-500 text-white';
+                bpCategoryTag.textContent = '前期';
+            } else {
+                // Normal
+                bpStatusBadge.className = 'mt-3 p-2.5 rounded-lg text-xs font-medium flex items-center justify-between bg-emerald-50 text-emerald-700 border border-emerald-200';
+                bpStatusText.textContent = '✅ 血壓數值正常';
+                bpCategoryTag.className = 'px-2 py-0.5 rounded text-xs font-bold bg-emerald-600 text-white';
+                bpCategoryTag.textContent = '正常';
+            }
+        }
+
+        // Form Submit: Save Check-in Log
+        function handleFormSubmit(e) {
+            e.preventDefault();
+
+            const elderId = elderSelect.value;
+            const foundElder = elders.find(item => item.id === elderId);
+            if (!foundElder) {
+                showToast('請選擇有效的長輩', 'error');
+                return;
+            }
+
+            const now = new Date();
+            const dateStr = now.toISOString().split('T')[0];
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            
+            const isSelfPay = selectedCaseType === 'self';
+            const duration = document.querySelector('input[name="duration"]:checked')?.value || 'half';
+            const fee = isSelfPay ? (duration === 'half' ? 90 : 200) : 0;
+
+            const newLog = {
+                id: `log-${Date.now()}`,
+                date: dateStr,
+                time: timeStr,
+                elderId: foundElder.id,
+                elderName: foundElder.name,
+                isSelfPay: isSelfPay,
+                duration: duration,
+                fee: fee,
+                systolic: parseInt(systolicInput.value),
+                diastolic: parseInt(diastolicInput.value),
+                pulse: parseInt(pulseInput.value),
+                remark: document.getElementById('remarkInput').value.trim()
+            };
+
+            // Prepend new record
+            logs.unshift(newLog);
+            localStorage.setItem('care_logs', JSON.stringify(logs));
+
+            // Reset Form (Keep elder selection for quick re-entries if needed)
+            checkInForm.reset();
+            setCaseType('gov');
+            evaluateBloodPressure();
+
+            // Refresh UI
+            renderLogsTable();
+            updateOverviewStats();
+            showToast(`已成功儲存 ${foundElder.name} 的簽到紀錄！`, 'success');
+        }
+
+        // Render Logs Table with Filters
+        function renderLogsTable() {
+            const dateVal = filterDate.value;
+            const searchVal = filterSearch.value.trim().toLowerCase();
+            const typeVal = filterType.value;
+
+            const filtered = logs.filter(log => {
+                const matchesDate = !dateVal || log.date === dateVal;
+                const matchesSearch = !searchVal || log.elderName.toLowerCase().includes(searchVal);
+                let matchesType = true;
+                if (typeVal === 'self') matchesType = log.isSelfPay === true;
+                if (typeVal === 'gov') matchesType = log.isSelfPay === false;
+
+                return matchesDate && matchesSearch && matchesType;
+            });
+
+            logTableBody.innerHTML = '';
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                filtered.forEach(log => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-slate-50 transition';
+
+                    // BP badge color inline logic
+                    let bpBadgeClass = 'bg-emerald-100 text-emerald-800';
+                    if (log.systolic >= 140 || log.diastolic >= 90) {
+                        bpBadgeClass = 'bg-red-100 text-red-800 font-bold';
+                    } else if (log.systolic >= 120 || log.diastolic >= 80) {
+                        bpBadgeClass = 'bg-amber-100 text-amber-800';
+                    }
+
+                    tr.innerHTML = `
+                        <td class="py-3 px-3 font-medium text-slate-600">
+                            <div>${log.time}</div>
+                            <div class="text-[10px] text-slate-400">${log.date}</div>
+                        </td>
+                        <td class="py-3 px-3 font-bold text-slate-800">
+                            ${log.elderName}
+                            ${log.remark ? `<div class="text-[11px] text-slate-400 font-normal"><i class="fa-regular fa-note-sticky mr-1"></i>${log.remark}</div>` : ''}
+                        </td>
+                        <td class="py-3 px-3">
+                            <span class="px-2 py-0.5 rounded text-xs font-semibold ${log.isSelfPay ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'}">
+                                ${log.isSelfPay ? '自費' : '公費'} • ${log.duration === 'half' ? '半天' : '整天'}
+                            </span>
+                        </td>
+                        <td class="py-3 px-3">
+                            <span class="inline-block px-2 py-1 rounded-md ${bpBadgeClass}">
+                                ${log.systolic}/${log.diastolic} <span class="text-[10px] opacity-75">mmHg</span>
+                            </span>
+                            <span class="text-xs text-slate-500 ml-1">(${log.pulse} bpm)</span>
+                        </td>
+                        <td class="py-3 px-3 font-bold ${log.fee > 0 ? 'text-emerald-600' : 'text-slate-400'}">
+                            $${log.fee}
+                        </td>
+                        <td class="py-3 px-3 text-right">
+                            <button onclick="deleteLog('${log.id}')" class="text-slate-400 hover:text-red-500 p-1.5 transition rounded-lg hover:bg-red-50" title="刪除紀錄">
+                                <i class="fa-regular fa-trash-can"></i>
+                            </button>
+                        </td>
+                    `;
+                    logTableBody.appendChild(tr);
+                });
+            }
+
+            recordCountDisplay.textContent = `顯示 ${filtered.length} 筆紀錄`;
+        }
+
+        // Delete single log
+        function deleteLog(id) {
+            logs = logs.filter(item => item.id !== id);
+            localStorage.setItem('care_logs', JSON.stringify(logs));
+            renderLogsTable();
+            updateOverviewStats();
+            showToast('紀錄已成功刪除', 'info');
+        }
+
+        // Modal Form Submit: Add New Elder
+        function handleNewElderSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('newElderName').value.trim();
+            const defaultType = document.querySelector('input[name="newElderType"]:checked').value;
+            const phone = document.getElementById('newElderPhone').value.trim();
+
+            if (!name) return;
+
+            const newElder = {
+                id: `elder-${Date.now()}`,
+                name: name,
+                defaultType: defaultType,
+                phone: phone
+            };
+
+            elders.push(newElder);
+            localStorage.setItem('care_elders', JSON.stringify(elders));
+            
+            populateElderDropdown();
+            elderSelect.value = newElder.id;
+            setCaseType(defaultType);
+
+            newElderForm.reset();
+            modalNewElder.classList.add('hidden');
+            showToast(`已成功新增長輩名單：${name}`, 'success');
+        }
+
+        // Update Header Overview Stats (Today's statistics)
+        function updateOverviewStats() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayLogs = logs.filter(log => log.date === todayStr);
+
+            const totalCount = todayLogs.length;
+            const selfPayCount = todayLogs.filter(log => log.isSelfPay).length;
+            const totalAmount = todayLogs.reduce((sum, log) => sum + (log.fee || 0), 0);
+
+            document.getElementById('statTodayCount').innerHTML = `${totalCount} <span class="text-sm font-normal text-slate-500">人</span>`;
+            document.getElementById('statSelfPayCount').innerHTML = `${selfPayCount} <span class="text-sm font-normal text-slate-500">人</span>`;
+            document.getElementById('statTodayAmount').textContent = `$${totalAmount}`;
+        }
+
+        // CSV Export Function
+        function exportToCSV() {
+            if (logs.length === 0) {
+                showToast('目前尚無資料可供匯出', 'error');
+                return;
+            }
+
+            const headers = ['日期', '時間', '長輩姓名', '個案類別', '簽到時段', '收縮壓(mmHg)', '舒張壓(mmHg)', '心跳(bpm)', '應收自費金額', '備註'];
+            const rows = logs.map(log => [
+                log.date,
+                log.time,
+                `"${log.elderName.replace(/"/g, '""')}"`,
+                log.isSelfPay ? '自費個案' : '公費/一般',
+                log.duration === 'half' ? '半天 ($90)' : '整天 ($200)',
+                log.systolic,
+                log.diastolic,
+                log.pulse,
+                log.fee,
+                `"${(log.remark || '').replace(/"/g, '""')}"`
+            ]);
+
+            const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `長照據點簽到與血壓紀錄_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast('已匯出 CSV 報表！', 'success');
+        }
+
+        // Non-intrusive Toast Notification
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMessage.textContent = msg;
+
+            if (type === 'error') {
+                toastIcon.className = 'fa-solid fa-circle-exclamation text-red-400';
+            } else if (type === 'info') {
+                toastIcon.className = 'fa-solid fa-circle-info text-blue-400';
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-check text-emerald-400';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
